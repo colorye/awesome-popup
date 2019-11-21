@@ -23,11 +23,31 @@ function _extends() { _extends = Object.assign || function (target) { for (var i
 
 var SEED = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+function cx() {
+  for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+    args[_key] = arguments[_key];
+  }
+
+  return args.reduce(function (res, arg) {
+    if (!arg) return res;
+    if (["string", "number"].includes(typeof arg)) return res + " " + arg;
+    if (Array.isArray(arg) && arg.length > 0) return res + " " + cx(arg);
+
+    if (typeof arg === "object") {
+      for (var key in arg) {
+        if (!!arg[key]) res = res + " " + key;
+      }
+
+      return res;
+    }
+  }, "").trim();
+}
+
 var context = _react.default.createContext();
 
 function Provider(_ref) {
-  var children = _ref.children,
-      rootId = _ref.rootId;
+  var children = _ref.children;
+  var rootId = "awesome-popup-wrapper";
 
   var _useState = (0, _react.useState)([]),
       popups = _useState[0],
@@ -47,7 +67,16 @@ function Provider(_ref) {
       }));
     });
   }, []);
-  console.log("POPUP", popups);
+  (0, _react.useEffect)(function () {
+    (function () {
+      var root = document.getElementById(rootId);
+      if (!!root) return;
+      var body = document.getElementsByTagName("body")[0];
+      root = document.createElement("div");
+      root.id = rootId;
+      body.insertBefore(root, body.firstChild);
+    })();
+  }, []);
   return _react.default.createElement(context.Provider, {
     value: {
       init: init,
@@ -62,28 +91,72 @@ function Provider(_ref) {
 }
 
 Provider.context = context;
-Provider.propTypes = {
-  rootId: _propTypes.default.string.isRequired
-};
 var AwesomePopupContainer = Provider;
+/**
+ * header: header / title, closeIcon. header will override all
+ * content: description, content (function will have onClose as props)
+ * footer: footer / confirmText, cancelText. footer will override all
+ *
+ * fullscreen, dismiss
+ * className, headerClassName, footerClassName
+ * confirmClassName, cancelClassName
+ * onConfirm, onCancel
+ *
+ * await (wait for callback result)
+ */
+
 exports.AwesomePopupContainer = AwesomePopupContainer;
 
-function Popup(_ref2) {
-  var children = _ref2.children,
-      id = _ref2.id,
-      onClose = _ref2.onClose;
+function Popup(props) {
+  var id = props.id;
 
-  var onClick = function onClick() {
-    return onClose(id);
+  var onClose = function onClose(src) {
+    return function () {
+      if (!props.dismiss && src === "BACKGROUND") return;
+      props.onClose(id);
+    };
   };
 
-  return _react.default.createElement("div", {
+  var style = {
+    minWidth: props.minWidth,
+    maxWidth: props.maxWidth
+  };
+
+  var Header = function () {
+    if (props.header === null) return null;
+    return _react.default.createElement("div", {
+      className: cx("header", props.headerClassName)
+    }, props.header, !props.header && _react.default.createElement(_react.default.Fragment, null, props.title, props.closeIcon !== null ? _react.default.createElement("i", {
+      className: cx("icon-close", props.closeIcon || "right"),
+      onClick: onClose("ICON")
+    }) : null));
+  }();
+
+  var Footer = function () {
+    if (props.footer === null) return null;
+    return _react.default.createElement("div", {
+      className: cx("footer", props.footerClassName)
+    }, props.footer, !props.footer && _react.default.createElement(_react.default.Fragment, null, props.onCancel && _react.default.createElement("button", {
+      className: cx("btn btn-cancel", props.cancelClassName),
+      onClick: onClose("CANCEL")
+    }, props.cancelText || "Cancel"), _react.default.createElement("button", {
+      className: cx("btn btn-confirm", props.confirmClassName),
+      onClick: onClose("CONFIRM")
+    }, props.confirmText || "Confirm")));
+  }();
+
+  return _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("div", {
+    className: "popup-bg",
+    onClick: onClose("BACKGROUND")
+  }), _react.default.createElement("div", {
     key: id,
-    className: "awesome-popup"
-  }, children, _react.default.createElement("button", {
-    onClick: onClick
-  }, "Destroy popup"));
+    className: cx("awesome-popup", props.className, props.fullscreen && "fullscreen"),
+    style: style
+  }, Header, props.children, Footer));
 }
 
+Popup.defaultProps = {
+  dismiss: true
+};
 var _default = Popup;
 exports.default = _default;
