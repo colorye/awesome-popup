@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import PropTypes from "prop-types";
 import ReactDOM from "react-dom";
@@ -22,32 +22,36 @@ function cx(...args) {
     .trim();
 }
 
-const context = React.createContext();
+const Context = React.createContext();
 
-function Provider({ children }) {
+export function AwesomePopupProvider({ children, containerId }) {
   const rootId = "awesome-popup-wrapper";
   const [popups, setPopups] = useState([]);
-  const destroy = useCallback(id => {
-    setPopups(popups => popups.filter(popup => popup.id !== id));
+
+  const create = useCallback(options => {
+    const newId = nanoId(SEED, 10);
+    setPopups(popups => popups.concat({ ...options, id: newId }));
+    return newId;
   }, []);
-  const init = useCallback(options => {
-    setPopups(popups => popups.concat({ ...options, id: nanoId(SEED, 10) }));
+  const destroy = useCallback((id, callback) => {
+    setPopups(popups => popups.filter(popup => popup.id !== id));
+    typeof callback === "function" && callback();
   }, []);
 
   useEffect(() => {
     (() => {
-      let root = document.getElementById(rootId);
-      if (!!root) return;
+      const container = containerId
+        ? document.getElementById(containerId)
+        : document.getElementsByTagName("body")[0];
 
-      const body = document.getElementsByTagName("body")[0];
-      root = document.createElement("div");
+      const root = document.createElement("div");
       root.id = rootId;
-      body.insertBefore(root, body.firstChild);
+      container.appendChild(root);
     })();
   }, []);
 
   return (
-    <context.Provider value={{ init, destroy, popups }}>
+    <Context.Provider value={{ create, destroy }}>
       {children}
       {popups.map(popup =>
         ReactDOM.createPortal(
@@ -57,12 +61,12 @@ function Provider({ children }) {
           document.getElementById(rootId)
         )
       )}
-    </context.Provider>
+    </Context.Provider>
   );
 }
-Provider.context = context;
 
-export const AwesomePopupContainer = Provider;
+export const AwesomePopupConsumer = Context.Consumer;
+export const AwesomePopupContext = Context;
 
 /**
  * header: header / title, closeIcon. header will override all
@@ -81,12 +85,19 @@ function Popup(props) {
   const { id } = props;
   const onClose = src => () => {
     if (!props.dismiss && src === "BACKGROUND") return;
-    props.onClose(id);
+    props.onClose(id, () => {
+      if (src === "CONFIRM" && typeof props.onConfirm === "function")
+        props.onConfirm();
+      if (src === "CANCEL" && typeof props.onCancel === "function")
+        props.onCancel();
+    });
   };
 
   const style = {
     minWidth: props.minWidth,
-    maxWidth: props.maxWidth
+    maxWidth: props.maxWidth,
+    minHeight: props.minHeight,
+    maxHeight: props.maxHeight
   };
 
   const Header = (() => {
@@ -116,7 +127,7 @@ function Popup(props) {
         {props.footer}
         {!props.footer && (
           <>
-            {props.onCancel && (
+            {props.onCancel !== null && (
               <button
                 className={cx("btn btn-cancel", props.cancelClassName)}
                 onClick={onClose("CANCEL")}
@@ -169,5 +180,3 @@ function Popup(props) {
 Popup.defaultProps = {
   dismiss: true
 };
-
-export default Popup;

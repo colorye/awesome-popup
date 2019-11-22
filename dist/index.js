@@ -3,7 +3,8 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = exports.AwesomePopupContainer = void 0;
+exports.AwesomePopupProvider = AwesomePopupProvider;
+exports.AwesomePopupContext = exports.AwesomePopupConsumer = void 0;
 
 var _react = _interopRequireWildcard(require("react"));
 
@@ -43,45 +44,46 @@ function cx() {
   }, "").trim();
 }
 
-var context = _react.default.createContext();
+var Context = _react.default.createContext();
 
-function Provider(_ref) {
-  var children = _ref.children;
+function AwesomePopupProvider(_ref) {
+  var children = _ref.children,
+      containerId = _ref.containerId;
   var rootId = "awesome-popup-wrapper";
 
   var _useState = (0, _react.useState)([]),
       popups = _useState[0],
       setPopups = _useState[1];
 
-  var destroy = (0, _react.useCallback)(function (id) {
+  var create = (0, _react.useCallback)(function (options) {
+    var newId = (0, _generate.default)(SEED, 10);
+    setPopups(function (popups) {
+      return popups.concat(_extends({}, options, {
+        id: newId
+      }));
+    });
+    return newId;
+  }, []);
+  var destroy = (0, _react.useCallback)(function (id, callback) {
     setPopups(function (popups) {
       return popups.filter(function (popup) {
         return popup.id !== id;
       });
     });
-  }, []);
-  var init = (0, _react.useCallback)(function (options) {
-    setPopups(function (popups) {
-      return popups.concat(_extends({}, options, {
-        id: (0, _generate.default)(SEED, 10)
-      }));
-    });
+    typeof callback === "function" && callback();
   }, []);
   (0, _react.useEffect)(function () {
     (function () {
-      var root = document.getElementById(rootId);
-      if (!!root) return;
-      var body = document.getElementsByTagName("body")[0];
-      root = document.createElement("div");
+      var container = containerId ? document.getElementById(containerId) : document.getElementsByTagName("body")[0];
+      var root = document.createElement("div");
       root.id = rootId;
-      body.insertBefore(root, body.firstChild);
+      container.appendChild(root);
     })();
   }, []);
-  return _react.default.createElement(context.Provider, {
+  return _react.default.createElement(Context.Provider, {
     value: {
-      init: init,
-      destroy: destroy,
-      popups: popups
+      create: create,
+      destroy: destroy
     }
   }, children, popups.map(function (popup) {
     return _reactDom.default.createPortal(_react.default.createElement(Popup, _extends({}, popup, {
@@ -90,8 +92,9 @@ function Provider(_ref) {
   }));
 }
 
-Provider.context = context;
-var AwesomePopupContainer = Provider;
+var AwesomePopupConsumer = Context.Consumer;
+exports.AwesomePopupConsumer = AwesomePopupConsumer;
+var AwesomePopupContext = Context;
 /**
  * header: header / title, closeIcon. header will override all
  * content: description, content (function will have onClose as props)
@@ -105,21 +108,28 @@ var AwesomePopupContainer = Provider;
  * await (wait for callback result)
  */
 
-exports.AwesomePopupContainer = AwesomePopupContainer;
+exports.AwesomePopupContext = AwesomePopupContext;
 
 function Popup(props) {
+  var _this = this;
+
   var id = props.id;
 
   var onClose = function onClose(src) {
     return function () {
       if (!props.dismiss && src === "BACKGROUND") return;
-      props.onClose(id);
+      props.onClose(id, function () {
+        if (src === "CONFIRM" && typeof props.onConfirm === "function") props.onConfirm();
+        if (src === "CANCEL" && typeof props.onCancel === "function") props.onCancel();
+      });
     };
   };
 
   var style = {
     minWidth: props.minWidth,
-    maxWidth: props.maxWidth
+    maxWidth: props.maxWidth,
+    minHeight: props.minHeight,
+    maxHeight: props.maxHeight
   };
 
   var Header = function () {
@@ -136,7 +146,7 @@ function Popup(props) {
     if (props.footer === null) return null;
     return _react.default.createElement("div", {
       className: cx("footer", props.footerClassName)
-    }, props.footer, !props.footer && _react.default.createElement(_react.default.Fragment, null, props.onCancel && _react.default.createElement("button", {
+    }, props.footer, !props.footer && _react.default.createElement(_react.default.Fragment, null, props.onCancel !== null && _react.default.createElement("button", {
       className: cx("btn btn-cancel", props.cancelClassName),
       onClick: onClose("CANCEL")
     }, props.cancelText || "Cancel"), _react.default.createElement("button", {
@@ -145,6 +155,18 @@ function Popup(props) {
     }, props.confirmText || "Confirm")));
   }();
 
+  var renderContent = function renderContent(content, index) {
+    if (!content) return null;
+    if (Array.isArray(content)) return content.map(_this.renderContent);
+    if (_react.default.isValidElement(content)) return content;
+    if (typeof content === "function") return content({
+      handleClose: onClose
+    });
+    return _react.default.createElement("p", {
+      key: index
+    }, content);
+  };
+
   return _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("div", {
     className: "popup-bg",
     onClick: onClose("BACKGROUND")
@@ -152,11 +174,11 @@ function Popup(props) {
     key: id,
     className: cx("awesome-popup", props.className, props.fullscreen && "fullscreen"),
     style: style
-  }, Header, props.children, Footer));
+  }, Header, _react.default.createElement("div", {
+    className: "content"
+  }, props.description && _react.default.createElement("p", null, props.description), renderContent(props.content)), Footer));
 }
 
 Popup.defaultProps = {
   dismiss: true
 };
-var _default = Popup;
-exports.default = _default;

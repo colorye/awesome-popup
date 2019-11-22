@@ -3,14 +3,14 @@ import "./index.scss";
 
 import React, { useCallback, useContext } from "react";
 
-import { AwesomePopupContainer } from "../dist";
+import { AwesomePopupContext, AwesomePopupProvider } from "../dist";
 import ReactDOM from "react-dom";
 
 function App() {
-  const { init, destroy } = useContext(AwesomePopupContainer.context);
+  const { create, destroy } = useContext(AwesomePopupContext);
 
   const createPopup = useCallback(() => {
-    init({ title: "Hello popup", dismiss: false, minWidth: 400 });
+    create({ title: "Hello popup", dismiss: false, minWidth: 400 });
   }, []);
 
   return (
@@ -22,8 +22,8 @@ function App() {
 }
 
 ReactDOM.render(
-  <AwesomePopupContainer rootId="popup-wrapper">
+  <AwesomePopupProvider>
     <App />
-  </AwesomePopupContainer>,
+  </AwesomePopupProvider>,
   document.getElementById("root")
 );
