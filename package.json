@@ -2,7 +2,7 @@
   "name": "@colorye/awesome-popup",
   "version": "0.1.0",
   "description": "Effective, vivid way to create on-screen popup.",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "babel src -d dist --copy-files && yarn min",
     "min": "terser dist/index.js --compress --mangle --mangle-props regex=/^__/,reserved=[__esModule] --module --output dist/index.min.js",
