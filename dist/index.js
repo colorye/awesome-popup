@@ -56,20 +56,20 @@ function AwesomePopupProvider(_ref) {
       setPopups = _useState[1];
 
   var create = (0, _react.useCallback)(function (options) {
-    var newId = (0, _generate.default)(SEED, 10);
-    setPopups(function (popups) {
-      return popups.concat(_extends({}, options, {
-        id: newId
-      }));
+    var newPopups = popups;
+    if (options.type) newPopups = newPopups.filter(function (popup) {
+      return popup.type !== options.type;
     });
+    var newId = (0, _generate.default)(SEED, 10);
+    setPopups(newPopups.concat(_extends({}, options, {
+      id: newId
+    })));
     return newId;
   }, []);
   var destroy = (0, _react.useCallback)(function (id, callback) {
-    setPopups(function (popups) {
-      return popups.filter(function (popup) {
-        return popup.id !== id;
-      });
-    });
+    setPopups(popups.filter(function (popup) {
+      return popup.id !== id;
+    }));
     typeof callback === "function" && callback();
   }, []);
   (0, _react.useEffect)(function () {

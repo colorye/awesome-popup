@@ -29,12 +29,16 @@ export function AwesomePopupProvider({ children, containerId }) {
   const [popups, setPopups] = useState([]);
 
   const create = useCallback(options => {
+    let newPopups = popups;
+    if (options.type)
+      newPopups = newPopups.filter(popup => popup.type !== options.type);
+
     const newId = nanoId(SEED, 10);
-    setPopups(popups => popups.concat({ ...options, id: newId }));
+    setPopups(newPopups.concat({ ...options, id: newId }));
     return newId;
   }, []);
   const destroy = useCallback((id, callback) => {
-    setPopups(popups => popups.filter(popup => popup.id !== id));
+    setPopups(popups.filter(popup => popup.id !== id));
     typeof callback === "function" && callback();
   }, []);
 

@@ -1,6 +1,6 @@
 {
   "name": "@colorye/awesome-popup",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Effective, vivid way to create on-screen popup.",
   "main": "dist/index.js",
   "scripts": {
@@ -20,8 +20,9 @@
     "type": "git",
     "url": "https://github.com/colorye/awesome-popup.git"
   },
-  "dependencies": {
+  "peerDependencies": {
     "nanoid": "^2.1.7",
+    "prop-types": "^15.7.2",
     "react": "^16.12.0",
     "react-dom": "^16.12.0"
   },
@@ -31,6 +32,7 @@
     "@babel/plugin-transform-modules-commonjs": "^7.7.0",
     "@babel/plugin-transform-react-jsx": "^7.7.0",
     "@babel/preset-env": "^7.7.1",
+    "sass": "^1.23.7",
     "terser": "^4.4.0"
   }
 }
